@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PRON_SETS, findTutor, type PronSet } from "../../shared/catalog";
 import { Icon } from "../components";
 import PronounceCard from "../PronounceCard";
-import { loadPronBest, savePronBest, type Profile } from "../lib/store";
+import { loadPronBest, savePronBest, silenceMsOf, type Profile } from "../lib/store";
 
 export default function Pronounce({ profile }: { profile: Profile }) {
   const [active, setActive] = useState<PronSet | null>(null);
@@ -112,6 +112,7 @@ function PronSession({ profile, set, onExit }: { profile: Profile; set: PronSet;
             text={set.sentences[idx]}
             tutor={tutor}
             level={profile.level}
+            silenceMs={silenceMsOf(profile)}
             // 같은 문장을 여러 번 시도하면 최고 점수를 남긴다
             onResult={(r) => setScores((sc) => sc.map((v, i) => (i === idx ? Math.max(v ?? 0, r.score) : v)))}
           />

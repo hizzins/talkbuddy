@@ -4,7 +4,12 @@ export interface Profile extends Learner {
   tutorId: string;
   dailyMinutes: number;
   autoplay: boolean;
+  silenceSec?: number; // 말이 이만큼 멈추면 자동 전송. 0 = 자동 전송 안 함(버튼으로만). 없으면 기본값
 }
+
+export const DEFAULT_SILENCE_SEC = 4;
+export const SILENCE_OPTIONS = [2.5, 4, 6, 0];
+export const silenceMsOf = (p: Profile) => (p.silenceSec ?? DEFAULT_SILENCE_SEC) * 1000;
 
 export interface SessionRecord {
   at: string; // ISO
@@ -52,6 +57,7 @@ export const defaultProfile = (): Profile => ({
   tutorId: "mia",
   dailyMinutes: 10,
   autoplay: true,
+  silenceSec: DEFAULT_SILENCE_SEC,
 });
 
 export function localDay(d = new Date()): string {

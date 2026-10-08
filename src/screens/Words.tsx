@@ -4,7 +4,7 @@ import { Icon } from "../components";
 import { PronounceSheet } from "../PronounceCard";
 import { getWords } from "../lib/api";
 import { speak, stopSpeaking } from "../lib/speech";
-import { MAX_BOX, addWords, dueCards, gradeCard, loadDeck, removeCard, type Card, type Profile } from "../lib/store";
+import { MAX_BOX, addWords, dueCards, gradeCard, loadDeck, removeCard, silenceMsOf, type Card, type Profile } from "../lib/store";
 
 const STUDY_LIMIT = 20;
 
@@ -203,7 +203,7 @@ function Study({ profile, cards, onGrade, onExit }: { profile: Profile; cards: C
               <span>따라 말하기</span>
             </button>
           </div>
-          <PronounceSheet text={pronText} tutor={tutor} level={profile.level} onClose={() => setPronText(null)} />
+          <PronounceSheet text={pronText} tutor={tutor} level={profile.level} silenceMs={silenceMsOf(profile)} onClose={() => setPronText(null)} />
           <div className="grade-row">
             <button className="btn big grade-no" onClick={() => grade(false)}>
               몰라요

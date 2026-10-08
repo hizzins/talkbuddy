@@ -5,8 +5,8 @@ import type { FinishedSession } from "../App";
 import { Avatar, Icon, Sheet } from "../components";
 import { PronounceSheet } from "../PronounceCard";
 import { getFeedback, getHint, streamChat, translate } from "../lib/api";
-import { canListen, listen, speak, stopSpeaking, type Listener } from "../lib/speech";
-import type { Profile } from "../lib/store";
+import { canListen, listen, speak, stopHint, stopSpeaking, type Listener } from "../lib/speech";
+import { silenceMsOf, type Profile } from "../lib/store";
 
 interface Msg {
   id: number;
@@ -126,6 +126,7 @@ export default function Chat({ profile, scenarioId, onExit, onFinish }: Props) {
     setSpeakingId(null);
     const l = listen(
       tutor.accent,
+      silenceMsOf(profile),
       setInterim,
       (final) => {
         setListening(false);
@@ -295,10 +296,10 @@ export default function Chat({ profile, scenarioId, onExit, onFinish }: Props) {
             </button>
           </div>
         )}
-        {!typing && <p className="muted small center">{busy ? `${tutor.name}가 답하는 중…` : listening ? "말을 마치면 자동으로 보내요" : "버튼을 누르고 영어로 말해 보세요"}</p>}
+        {!typing && <p className="muted small center">{busy ? `${tutor.name}가 답하는 중…` : listening ? stopHint(silenceMsOf(profile), "전송") : "버튼을 누르고 영어로 말해 보세요"}</p>}
       </footer>
 
-      <PronounceSheet text={pronText} tutor={tutor} level={profile.level} onClose={() => setPronText(null)} />
+      <PronounceSheet text={pronText} tutor={tutor} level={profile.level} silenceMs={silenceMsOf(profile)} onClose={() => setPronText(null)} />
 
       <Sheet open={hints !== null} onClose={() => setHints(null)} title="이렇게 말해 보세요">
         {hints === "loading" ? (

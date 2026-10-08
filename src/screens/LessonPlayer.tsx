@@ -5,7 +5,7 @@ import { Icon } from "../components";
 import { PronounceSheet } from "../PronounceCard";
 import { getLesson } from "../lib/api";
 import { speak, stopSpeaking } from "../lib/speech";
-import { cacheLesson, cachedLesson, saveLessonResult, type Profile } from "../lib/store";
+import { cacheLesson, cachedLesson, saveLessonResult, silenceMsOf, type Profile } from "../lib/store";
 
 type Phase = "learn" | "quiz" | "result";
 
@@ -139,7 +139,7 @@ export default function LessonPlayer({ profile, lessonId, onExit }: { profile: P
             퀴즈 {lesson.quiz.length}문제 풀기
           </button>
         </div>
-        <PronounceSheet text={pron?.text ?? null} ko={pron?.ko} tutor={tutor} level={profile.level} onClose={() => setPron(null)} />
+        <PronounceSheet text={pron?.text ?? null} ko={pron?.ko} tutor={tutor} level={profile.level} silenceMs={silenceMsOf(profile)} onClose={() => setPron(null)} />
       </div>
     );
 

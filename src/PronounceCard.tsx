@@ -3,7 +3,7 @@ import type { Tutor } from "../shared/catalog";
 import type { Level } from "../shared/types";
 import { Icon, Sheet } from "./components";
 import { scorePronunciation, verdict, type PronounceResult } from "./lib/pronounce";
-import { canListen, listenForScoring, speak, stopSpeaking, type Listener } from "./lib/speech";
+import { canListen, listenForScoring, speak, stopHint, stopSpeaking, type Listener } from "./lib/speech";
 
 const STATUS_KO = { good: "정확", close: "비슷", wrong: "다르게 들림", missing: "안 들림" } as const;
 
@@ -12,11 +12,12 @@ interface Props {
   ko?: string;
   tutor: Tutor;
   level: Level;
+  silenceMs: number;
   onResult?: (r: PronounceResult) => void;
 }
 
 // 문장 하나를 듣고 → 따라 말하고 → 단어별로 채점한다.
-export default function PronounceCard({ text, ko, tutor, level, onResult }: Props) {
+export default function PronounceCard({ text, ko, tutor, level, silenceMs, onResult }: Props) {
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [result, setResult] = useState<PronounceResult | null>(null);
@@ -41,6 +42,7 @@ export default function PronounceCard({ text, ko, tutor, level, onResult }: Prop
     setResult(null);
     setInterim("");
     const l = listenForScoring(
+      silenceMs,
       setInterim,
       (alts) => {
         setListening(false);
@@ -96,7 +98,12 @@ export default function PronounceCard({ text, ko, tutor, level, onResult }: Prop
         <span className="side-btn ghost" aria-hidden />
       </div>
 
-      {listening && <p className="pron-interim">{interim || "듣고 있어요… 문장을 읽어 주세요"}</p>}
+      {listening && (
+        <>
+          <p className="pron-interim">{interim || "듣고 있어요… 문장을 읽어 주세요"}</p>
+          <p className="muted small">{stopHint(silenceMs, "채점")}</p>
+        </>
+      )}
       {error && <p className="pron-error">{error}</p>}
 
       {result && (
@@ -121,10 +128,10 @@ export default function PronounceCard({ text, ko, tutor, level, onResult }: Prop
 }
 
 // 대화 교정·레슨 예문·단어 카드에서 띄우는 따라 말하기 시트
-export function PronounceSheet(props: { text: string | null; ko?: string; tutor: Tutor; level: Level; onClose: () => void }) {
+export function PronounceSheet(props: { text: string | null; ko?: string; tutor: Tutor; level: Level; silenceMs: number; onClose: () => void }) {
   return (
     <Sheet open={props.text !== null} onClose={props.onClose} title="따라 말하기">
-      {props.text && <PronounceCard text={props.text} ko={props.ko} tutor={props.tutor} level={props.level} />}
+      {props.text && <PronounceCard text={props.text} ko={props.ko} tutor={props.tutor} level={props.level} silenceMs={props.silenceMs} />}
     </Sheet>
   );
 }

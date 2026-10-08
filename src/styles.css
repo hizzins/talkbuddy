@@ -382,3 +382,4 @@ code { background: rgba(0, 0, 0, 0.06); padding: 1px 5px; border-radius: 4px; fo
 .practice { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
 .example-btns { display: flex; gap: 4px; flex: none; }
 .example-btns button { border: 0; background: var(--surface); color: var(--primary); width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+.setting-sub { display: block; font-size: 12px; margin-top: 2px; }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SCENARIOS, findScenario, findTutor } from "../../shared/catalog";
 import { Avatar, Icon, Sheet } from "../components";
-import { resetAll, type Profile, type Stats } from "../lib/store";
+import { DEFAULT_SILENCE_SEC, SILENCE_OPTIONS, resetAll, type Profile, type Stats } from "../lib/store";
 import { TutorGrid } from "./Onboarding";
 
 interface Props {
@@ -121,6 +121,19 @@ export default function Home({ profile, stats, mode, onProfile, onReset, onStart
         <label className="setting">
           <span>튜터 음성 자동 재생</span>
           <input type="checkbox" checked={profile.autoplay} onChange={(e) => onProfile({ ...profile, autoplay: e.target.checked })} />
+        </label>
+        <label className="setting">
+          <span>
+            말 멈춤 후 자동 전송
+            <small className="muted setting-sub">말하다 이만큼 조용하면 보내요</small>
+          </span>
+          <select value={profile.silenceSec ?? DEFAULT_SILENCE_SEC} onChange={(e) => onProfile({ ...profile, silenceSec: Number(e.target.value) })}>
+            {SILENCE_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s === 0 ? "안 함 (버튼으로만)" : `${s}초`}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="setting">
           <span>실력</span>
