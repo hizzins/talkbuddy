@@ -31,21 +31,69 @@ const RATE: Record<Level, number> = { beginner: 0.85, intermediate: 0.95, advanc
 
 export const canSpeak = () => typeof speechSynthesis !== "undefined";
 
-export function speak(text: string, tutor: Tutor, level: Level, onEnd?: () => void) {
-  if (!canSpeak()) return onEnd?.();
-  speechSynthesis.cancel();
+function utterance(text: string, tutor: Tutor, level: Level) {
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice(tutor);
   if (v) u.voice = v;
   u.lang = v?.lang ?? tutor.accent;
   u.rate = RATE[level];
+  return u;
+}
+
+// 읽기를 멈출 때마다 올라간다. 멈춘 뒤에 늦게 도착한 문장이 다시 읽히지 않게 하는 표식.
+let generation = 0;
+
+export function speak(text: string, tutor: Tutor, level: Level, onEnd?: () => void) {
+  if (!canSpeak()) return onEnd?.();
+  stopSpeaking();
+  const u = utterance(text, tutor, level);
   u.onend = () => onEnd?.();
   u.onerror = () => onEnd?.();
   speechSynthesis.speak(u);
 }
 
 export function stopSpeaking() {
+  generation++;
   if (canSpeak()) speechSynthesis.cancel();
+}
+
+// 스트리밍 응답을 문장이 끝나는 대로 이어서 읽는 대기열.
+// onStart: 첫 문장을 읽기 시작할 때, onIdle: close() 이후 모든 문장을 다 읽었을 때(또는 멈췄을 때).
+export function speechQueue(tutor: Tutor, level: Level, onStart: () => void, onIdle: () => void) {
+  const gen = generation;
+  let pending = 0;
+  let started = false;
+  let closed = false;
+  let idled = false;
+  const idle = () => {
+    if (!idled) {
+      idled = true;
+      onIdle();
+    }
+  };
+  const alive = () => canSpeak() && gen === generation;
+  return {
+    add(text: string) {
+      if (!alive() || !text.trim()) return;
+      const u = utterance(text, tutor, level);
+      pending++;
+      u.onstart = () => {
+        if (!started) {
+          started = true;
+          onStart();
+        }
+      };
+      u.onend = u.onerror = () => {
+        pending--;
+        if (closed && pending <= 0) idle();
+      };
+      speechSynthesis.speak(u); // cancel 하지 않는다 — 앞 문장 뒤에 줄 선다
+    },
+    close() {
+      closed = true;
+      if (pending <= 0 || !alive()) idle();
+    },
+  };
 }
 
 // ---------- 음성 인식 (Web Speech Recognition) ----------

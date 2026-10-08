@@ -5,7 +5,8 @@ import type { FinishedSession } from "../App";
 import { Avatar, Icon, Sheet } from "../components";
 import { PronounceSheet } from "../PronounceCard";
 import { getFeedback, getHint, streamChat, translate } from "../lib/api";
-import { canListen, listen, speak, stopHint, stopSpeaking, type Listener } from "../lib/speech";
+import { SentenceSplitter } from "../lib/sentences";
+import { canListen, listen, speak, speechQueue, stopHint, stopSpeaking, type Listener } from "../lib/speech";
 import { silenceMsOf, type Profile } from "../lib/store";
 
 interface Msg {
@@ -66,15 +67,22 @@ export default function Chat({ profile, scenarioId, onExit, onFinish }: Props) {
     const id = ++seq;
     setBusy(true);
     setMsgs((ms) => [...ms, { id, role: "assistant", text: "", pending: true }]);
+    // 응답이 다 오기를 기다리지 않고, 문장이 끝나는 대로 바로 읽기 시작한다.
+    const voice = profile.autoplay
+      ? speechQueue(tutor, profile.level, () => setSpeakingId(id), () => setSpeakingId((cur) => (cur === id ? null : cur)))
+      : null;
+    const splitter = new SentenceSplitter();
     try {
-      const text = await streamChat({ tutorId: tutor.id, scenarioId, learner, history }, (d) =>
-        setMsgs((ms) => ms.map((m) => (m.id === id ? { ...m, text: m.text + d } : m))),
-      );
+      const text = await streamChat({ tutorId: tutor.id, scenarioId, learner, history }, (d) => {
+        setMsgs((ms) => ms.map((m) => (m.id === id ? { ...m, text: m.text + d } : m)));
+        if (voice) splitter.push(d).forEach(voice.add);
+      });
       patch(id, { text, pending: false });
-      if (profile.autoplay) say(id, text);
+      if (voice) splitter.flush().forEach(voice.add);
     } catch (e) {
       patch(id, { pending: false, error: e instanceof Error ? e.message : "오류가 났어요" });
     } finally {
+      voice?.close();
       setBusy(false);
     }
   }
@@ -83,11 +91,22 @@ export default function Chat({ profile, scenarioId, onExit, onFinish }: Props) {
     if (opened.current) return; // StrictMode 이중 실행 방지
     opened.current = true;
     reply([]);
-    return () => {
-      stopSpeaking();
-      listener.current?.stop();
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 화면을 떠날 때만 읽기·듣기를 멈춘다. StrictMode(개발 모드)의 "가짜 언마운트→재마운트"에서
+  // 바로 멈추면 막 시작한 첫 인사의 문장 읽기 대기열이 죽으므로, 재마운트되지 않았을 때만 멈춘다.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      setTimeout(() => {
+        if (mounted.current) return;
+        stopSpeaking();
+        listener.current?.stop();
+      }, 0);
+    };
   }, []);
 
   useEffect(() => {
