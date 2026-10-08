@@ -9,7 +9,7 @@ import type {
   TranslateRequest,
   WordsRequest,
 } from "../shared/types.js";
-import { RefusedError, feedback, hint, lesson, streamChat, summary, translate, words } from "./claude.js";
+import { RefusedError, feedback, hint, lesson, providerInfo, streamChat, summary, translate, words } from "./claude.js";
 import { mockChat, mockFeedback, mockHint, mockLesson, mockSummary, mockTranslate, mockWords } from "./mock.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -108,7 +108,8 @@ const routes: Record<string, (req: IncomingMessage) => Promise<unknown>> = {
 createServer(async (req, res) => {
   const path = (req.url ?? "").split("?")[0];
   try {
-    if (req.method === "GET" && path === "/api/health") return sendJson(res, 200, { mode: MOCK ? "mock" : "live" });
+    if (req.method === "GET" && path === "/api/health")
+      return sendJson(res, 200, { mode: MOCK ? "mock" : "live", model: MOCK ? null : providerInfo().model });
     if (req.method !== "POST") throw new HttpError(405, "POST only");
     if (path === "/api/chat") return await handleChat(req, res);
     const route = routes[path];
@@ -121,5 +122,6 @@ createServer(async (req, res) => {
     else res.end();
   }
 }).listen(PORT, () => {
-  console.log(`TalkBuddy API on :${PORT} (${MOCK ? "MOCK — API 키 없음" : "live"})`);
+  const p = providerInfo();
+  console.log(`TalkBuddy API on :${PORT} (${MOCK ? "MOCK — API 키 없음" : `live: ${p.model} @ ${p.baseURL}`})`);
 });

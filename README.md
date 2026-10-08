@@ -11,7 +11,23 @@ npm run dev             # API :8787 + 웹 :5180
 ```
 
 이 맥 셸에서는 `env -u NODE_OPTIONS npm run dev` 로 실행한다.
-폰에서 보려면 같은 Wi-Fi 에서 `http://<맥 IP>:5180`. 단, 마이크(음성 인식)는 HTTPS 또는 localhost 에서만 동작한다.
+
+### 폰에서 테스트 (HTTPS)
+
+폰 브라우저는 HTTPS 에서만 마이크·음성 인식을 허용한다. `npm run dev:https` 로 띄우면 자체 서명 인증서로
+`https://<맥 IP>:5180` 이 열린다(터미널 Network 줄에 주소가 나온다). 폰이 맥과 같은 네트워크에 있어야 하고,
+첫 접속 때 인증서 경고를 직접 넘겨야 한다(iOS 사파리: "세부사항 보기 → 이 웹사이트 방문", 안드로이드 크롬: "고급 → 계속").
+
+## AI 제공자 전환 (Claude ↔ Kimi)
+
+`.env` 만 바꾸면 된다(`.env.example` 참고). 서버 시작 로그와 `/api/health` 에 현재 모델이 표시된다.
+
+| | Claude | Kimi |
+|---|---|---|
+| 키 | `ANTHROPIC_API_KEY` | `ANTHROPIC_AUTH_TOKEN` (Bearer) |
+| 주소 | 기본값 | `ANTHROPIC_BASE_URL=https://api.moonshot.ai/anthropic` |
+| 모델 | `claude-opus-5-5` | `TALKBUDDY_MODEL=kimi-k3` |
+| 차이 | beta 경로 + 거절 시 fallback | 일반 경로, fallback 없음, effort medium→high |
 
 ## 구성
 
@@ -24,7 +40,7 @@ npm run dev             # API :8787 + 웹 :5180
 | 저장 | `src/lib/store.ts` | localStorage: 프로필, 연속일, 오늘 학습 분, 최근 세션 50개 |
 | 발음 | `Pronounce.tsx` · `PronounceCard.tsx` · `lib/pronounce.ts` | 발음 클리닉 6세트(R/L·F/P·V/B·TH·Z/J·장단모음, 정적). 대화 교정·레슨 예문·단어 카드에도 '따라 말하기'. 채점은 아래 참고 |
 | API | `server/index.ts` | `/api/chat`(SSE 스트리밍), `/api/feedback`, `/api/hint`, `/api/translate`, `/api/summary`, `/api/lesson`, `/api/words`, `/api/health` |
-| AI | `server/claude.ts` · `prompts.ts` | Claude `claude-opus-5-5`, 대화·교정은 effort low, 요약은 medium. 구조화 출력(Zod), 거절 시 서버측 fallback |
+| AI | `server/claude.ts` · `prompts.ts` | 기본 Claude `claude-opus-5-5`(거절 시 서버측 fallback). `TALKBUDDY_MODEL` 이 `claude-` 가 아니면 Anthropic 호환 엔드포인트(Kimi 등)로 일반 경로 호출. 대화·교정 effort low, 레슨·요약 medium(Kimi 는 high). 구조화 출력(Zod) |
 | 카탈로그 | `shared/catalog.ts` | 튜터 4명(Mia·Jay·Olivia·Liam), 시나리오 8종 |
 
 대화 한 턴마다 튜터 응답(스트리밍)과 교정 피드백(구조화 출력)을 병렬로 요청한다. 튜터는 교정하지 않고 대화만 이어가며, 교정은 사용자 말풍선 아래 칩으로 표시된다.
